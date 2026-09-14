@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Passive Voice Racer - SMP</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Press+Start+2P&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #1e3a8a, #0f172a);
+            color: white;
+            overflow: hidden;
+            touch-action: manipulation;
+        }
+
+        .title-font {
+            font-family: 'Press Start 2P', cursive;
+        }
+
+        .track {
+            background-color: #334155;
+            background-image: 
+                linear-gradient(90deg, transparent 50%, rgba(255,255,255,.1) 50%);
+            background-size: 50px 100%;
+            border-top: 4px solid #94a3b8;
+            border-bottom: 4px solid #94a3b8;
+            position: relative;
+            overflow: hidden;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
+        }
+
+        .track-line {
+            position: absolute;
+            top: 50%;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background-image: linear-gradient(90deg, #fff 50%, transparent 50%);
+            background-size: 40px 100%;
+            transform: translateY(-50%);
+            opacity: 0.5;
+        }
+
+        .finish-line {
+            background: repeating-conic-gradient(#000 0% 25%, #fff 0% 50%) 50% / 20px 20px;
+            box-shadow: -5px 0 15px rgba(0,0,0,0.5);
+        }
+
+        .car {
+            transition: left 0.3s ease-out, transform 0.1s;
+            filter: drop-shadow(-2px 4px 6px rgba(0,0,0,0.4));
+            transform: scaleX(-1);
+        }
+
+        .car.moving {
+            transform: scaleX(-1) translateY(-2px) rotate(-2deg);
+        }
+        
+        .car.wrong {
+            animation: shake 0.5s;
+        }
+
+        @keyframes shake {
+            0% { transform: scaleX(-1) translateX(0); }
+            25% { transform: scaleX(-1) translateX(-5px); }
+            50% { transform: scaleX(-1) translateX(5px); }
+            75% { transform: scaleX(-1) translateX(-5px); }
+            100% { transform: scaleX(-1) translateX(0); }
+        }
+
+        /* Button Effects */
+        .btn-game {
+            transition: all 0.2s;
+            box-shadow: 0 4px 0 rgba(0,0,0,0.3);
+        }
+        .btn-game:active {
+            transform: translateY(4px);
+            box-shadow: 0 0 0 rgba(0,0,0,0.3);
+        }
+        
+        /* Confetti Effect */
+        @keyframes confetti-fall {
+            0% { transform: translateY(-10vh) rotate(0deg); opacity: 1; }
+            100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+        }
+        .confetti {
+            position: fixed;
+            width: 12px;
+            height: 12px;
+            top: -20px;
+            z-index: 60; /* Above modal background, behind modal box */
+            animation: confetti-fall 3s linear infinite;
+        }
+
+        /* Disable text selection for better game feel */
+        .no-select {
+            user-select: none;
+            -webkit-user-select: none;
+        }
+    </style>
+</head>
+<body class="h-screen w-screen flex flex-col justify-between items-center no-select">
+
+    <div id="main-menu" class="flex-1 w-full flex flex-col justify-center items-center z-10">
+        <div class="text-center mb-10">
+            <h1 class="text-4xl md:text-5xl title-font text-yellow-400 mb-4 drop-shadow-lg">PASSIVE VOICE</h1>
+            <h2 class="text-2xl title-font text-white drop-shadow-md">RACER</h2>
+            <p class="mt-4 text-gray-300">Bahasa Inggris - Fase D SMP</p>
+        </div>
+
+        <div class="space-y-4 w-64">
+            <button onclick="showMenu('single-setup-menu')" class="w-full btn-game bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-4 rounded-xl text-xl">
+                👤 Single Player
+            </button>
+            <button onclick="showMenu('duel-setup-menu')" class="w-full btn-game bg-red-500 hover:bg-red-600 text-white font-bold py-3 px-4 rounded-xl text-xl">
+                ⚔️ Duel Mode
+            </button>
+            <button onclick="toggleModal('instructions-modal')" class="w-full btn-game bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-4 rounded-xl text-xl">
+                📖 Petunjuk
+            </button>
+        </div>
+    </div>
+
+    <div id="single-setup-menu" class="hidden flex-1 w-full flex flex-col justify-center items-center z-10">
+        <h2 class="text-3xl title-font text-yellow-400 mb-6 drop-shadow-md text-center">SINGLE<br>PLAYER</h2>
+        <div class="w-80 bg-slate-800 p-6 rounded-2xl border-2 border-slate-600 mb-6">
+            <label class="block text-sm font-bold mb-2 text-blue-300">Nama Kamu:</label>
+            <input type="text" id="sp-name" class="w-full p-3 mb-6 rounded-xl bg-slate-700 text-white border border-slate-500 focus:outline-none focus:border-blue-500 font-bold" placeholder="Player" value="Player" maxlength="12" autocomplete="off">
+            
+            <label class="block text-sm font-bold mb-2 text-yellow-300">Pilih Kesulitan:</label>
+            <div class="space-y-3">
+                <button onclick="startSingle('easy')" class="w-full btn-game bg-green-500 hover:bg-green-600 text-white font-bold py-3 rounded-xl text-lg">Easy (Santai)</button>
+                <button onclick="startSingle('medium')" class="w-full btn-game bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-3 rounded-xl text-lg">Medium (Sedang)</button>
+                <button onclick="startSingle('hard')" class="w-full btn-game bg-red-500 hover:bg-red-600 text-white font-bold py-3 rounded-xl text-lg">Hard (Ngebut)</button>
+            </div>
+        </div>
+        <button onclick="backToMainMenu('single-setup-menu')" class="w-80 btn-game bg-gray-500 hover:bg-gray-600 text-white font-bold py-3 px-4 rounded-xl">Kembali</button>
+    </div>
+
+    <div id="duel-setup-menu" class="hidden flex-1 w-full flex flex-col justify-center items-center z-10">
+        <h2 class="text-3xl title-font text-yellow-400 mb-6 drop-shadow-md text-center">DUEL MODE</h2>
+        <div class="w-80 bg-slate-800 p-6 rounded-2xl border-2 border-slate-600 mb-6 space-y-4">
+            <div>
+                <label class="block text-sm font-bold mb-2 text-blue-400">Nama Player 1 (Kiri):</label>
+                <input type="text" id="dp-name1" class="w-full p-3 rounded-xl bg-slate-700 text-white border border-slate-500 focus:outline-none focus:border-blue-500 font-bold" placeholder="Player 1" value="Player 1" maxlength="12" autocomplete="off">
+            </div>
+            <div>
+                <label class="block text-sm font-bold mb-2 text-red-400">Nama Player 2 (Kanan):</label>
+                <input type="text" id="dp-name2" class="w-full p-3 rounded-xl bg-slate-700 text-white border border-slate-500 focus:outline-none focus:border-red-500 font-bold" placeholder="Player 2" value="Player 2" maxlength="12" autocomplete="off">
+            </div>
+            <button onclick="startDuel()" class="w-full btn-game bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 mt-6 rounded-xl text-xl shadow-lg border-b-4 border-blue-700">Mulai Duel! ⚔️</button>
+        </div>
+        <button onclick="backToMainMenu('duel-setup-menu')" class="w-80 btn-game bg-gray-500 hover:bg-gray-600 text-white font-bold py-3 px-4 rounded-xl">Kembali</button>
+    </div>
+
+    <div id="game-ui" class="hidden flex-1 w-full flex flex-col max-w-5xl mx-auto w-full relative">
+        
+        <!-- HUD / Header -->
+        <div class="flex justify-between items-center p-4 bg-slate-900 bg-opacity-80 border-b border-slate-700">
+            <div class="flex items-center gap-2">
+                <span class="text-xl font-bold text-blue-400" id="p1-name">Player 1</span>
+                <span id="p1-lives" class="text-red-500 text-2xl tracking-widest">❤️❤️❤️</span>
+            </div>
+            
+            <div class="text-center">
+                <div class="text-yellow-400 font-bold title-font text-sm md:text-base" id="level-display">LEVEL 1</div>
+                <div class="text-xs text-gray-400 mt-1" id="mode-display">Single Player - Medium</div>
+            </div>
+
+            <div class="flex items-center gap-2">
+                <span id="p2-lives" class="text-red-500 text-2xl tracking-widest">❤️❤️❤️</span>
+                <span class="text-xl font-bold text-red-400" id="p2-name">Bot</span>
+            </div>
+        </div>
+
+        <!-- Track Area -->
+        <div class="track h-32 md:h-40 w-full shrink-0">
+            <div class="track-line"></div>
+            <!-- P1 Car (Blue) -->
+            <div id="car1" class="car absolute top-2 md:top-4 text-4xl md:text-5xl" style="left: 2%;">🏎️</div>
+            <!-- P2 Car (Red/Bot) -->
+            <div id="car2" class="car absolute bottom-2 md:bottom-4 text-4xl md:text-5xl" style="left: 2%;">🚓</div>
+            
+            <div class="finish-line absolute right-0 top-0 bottom-0 w-8 md:w-12 z-0"></div>
+        </div>
+
+        <!-- Question Area -->
+        <div class="flex-1 flex flex-col p-4">
+            <div class="bg-slate-800 border-2 border-slate-600 rounded-2xl p-4 md:p-6 mb-4 shadow-xl text-center relative">
+                <span class="absolute top-2 left-4 text-xs text-slate-400">Question</span>
+                <p id="question-text" class="text-lg md:text-2xl font-semibold mt-2 min-h-[3rem] flex items-center justify-center">
+                    Loading question...
+                </p>
+                <div id="feedback-overlay" class="absolute inset-0 flex items-center justify-center bg-black bg-opacity-80 rounded-xl hidden z-10 text-3xl font-bold">
+                    Benar!
+                </div>
+            </div>
+
+            <!-- Single Player Controls -->
+            <div id="single-controls" class="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4 w-full max-w-2xl mx-auto hidden">
+                <!-- Buttons will be injected here -->
+            </div>
+
+            <!-- Duel Player Controls -->
+            <div id="duel-controls" class="flex gap-4 h-full hidden">
+                <!-- P1 Left Side -->
+                <div class="flex-1 flex flex-col gap-2 bg-blue-900 bg-opacity-30 p-2 rounded-xl border border-blue-800">
+                    <div id="duel-p1-label" class="text-center text-blue-400 text-sm font-bold mb-1">P1 (Kiri)</div>
+                    <div id="duel-p1-options" class="grid grid-rows-4 gap-2 flex-1"></div>
+                </div>
+                <!-- P2 Right Side -->
+                <div class="flex-1 flex flex-col gap-2 bg-red-900 bg-opacity-30 p-2 rounded-xl border border-red-800">
+                    <div id="duel-p2-label" class="text-center text-red-400 text-sm font-bold mb-1">P2 (Kanan)</div>
+                    <div id="duel-p2-options" class="grid grid-rows-4 gap-2 flex-1"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Instructions Modal -->
+    <div id="instructions-modal" class="fixed inset-0 bg-black bg-opacity-80 hidden flex justify-center items-center z-50 p-4">
+        <div class="bg-slate-800 border-2 border-yellow-500 rounded-2xl p-6 max-w-lg w-full">
+            <h2 class="text-2xl font-bold text-yellow-400 mb-4 title-font text-center">PETUNJUK</h2>
+            <div class="text-gray-200 space-y-3 text-sm md:text-base h-64 overflow-y-auto pr-2">
+                <p>🏎️ <strong>Tujuan:</strong> Mencapai garis finish pertama dengan menjawab soal tentang <span class="text-blue-300">Passive Voice</span> (Bahasa Inggris Fase D).</p>
+                <hr class="border-slate-600">
+                <h3 class="font-bold text-green-400">👤 Single Player:</h3>
+                <ul class="list-disc pl-5">
+                    <li>Pilih jawaban yang benar untuk memajukan mobilmu (🏎️).</li>
+                    <li>Bot (🚓) akan bergerak otomatis. Semakin tinggi tingkat kesulitan, semakin cepat Bot bergerak!</li>
+                    <li>Jawaban salah = Nyawa berkurang 1.</li>
+                </ul>
+                <hr class="border-slate-600">
+                <h3 class="font-bold text-red-400">⚔️ Duel Mode (2 Pemain):</h3>
+                <ul class="list-disc pl-5">
+                    <li>Main berdua dalam satu layar. P1 (Kiri/Biru) vs P2 (Kanan/Merah).</li>
+                    <li>Rebutan menjawab soal! Siapa cepat dan benar, mobilnya maju.</li>
+                    <li>Jika salah, nyawa berkurang. Pemain yang kehabisan nyawa akan kalah.</li>
+                </ul>
+                <hr class="border-slate-600">
+                <p>❤️ <strong>Nyawa & Level:</strong> Kamu punya 3 nyawa. Setiap memenangkan level, tingkat kesulitan soal dan kecepatan Bot (di mode single) akan bertambah.</p>
+            </div>
+            <button onclick="toggleModal('instructions-modal')" class="mt-6 w-full btn-game bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-4 rounded-xl">
+                Tutup Paham!
+            </button>
+        </div>
+    </div>
+
+    <!-- Alert / Message Modal (Replacing default alert) -->
+    <div id="message-modal" class="fixed inset-0 bg-black bg-opacity-90 hidden flex justify-center items-center z-50 p-4 backdrop-blur-sm">
+        <div class="bg-slate-800 border-4 border-blue-500 rounded-2xl p-8 max-w-md w-full text-center shadow-2xl transition-transform transform scale-95" id="message-box">
+            <h2 id="msg-title" class="text-3xl font-bold text-white mb-4 title-font">JUDUL</h2>
+            <p id="msg-desc" class="text-gray-300 text-lg mb-8">Deskripsi pesan di sini.</p>
+            <div class="flex gap-4 justify-center" id="msg-actions">
+                <!-- Action buttons injected here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer Creator -->
+    <div class="w-full text-center py-2 bg-slate-950 text-slate-500 text-xs md:text-sm z-10 border-t border-slate-800">
+        Creator: Jamaluddin | UPTD SMPN 2 Robatal
+    </div>
+
+    <script>
+        // Bank Soal Passive Voice (Fase D SMP)
+        const questionBank = [
+            // Level 1: Present & Past Simple (Easy)
+            { q: 'He writes a letter. -> A letter ___ by him.', opts: ['is written', 'was written', 'is wrote', 'are written'], ans: 0, difficulty: 1 },
+            { q: 'She cleans the room every day. -> The room ___ by her every day.', opts: ['is cleaning', 'cleaned', 'is cleaned', 'was cleaned'], ans: 2, difficulty: 1 },
+            { q: 'My mother cooked fried rice. -> Fried rice ___ by my mother.', opts: ['is cooked', 'was cooked', 'cooks', 'were cooked'], ans: 1, difficulty: 1 },
+            { q: 'They played football yesterday. -> Football ___ by them yesterday.', opts: ['is played', 'was played', 'were played', 'has played'], ans: 1, difficulty: 1 },
+            { q: 'I buy a new book. -> A new book ___ by me.', opts: ['is bought', 'was bought', 'are bought', 'is buy'], ans: 0, difficulty: 1 },
+            { q: 'The cat drank the milk. -> The milk ___ by the cat.', opts: ['is drunk', 'was drank', 'was drunk', 'is drinking'], ans: 2, difficulty: 1 },
+            { q: 'Budi speaks English well. -> English ___ well by Budi.', opts: ['is spoken', 'was spoken', 'is speaking', 'speaks'], ans: 0, difficulty: 1 },
+            
+            // Level 2: Present/Past Continuous & Future (Medium)
+            { q: 'She is singing a song. -> A song ___ by her.', opts: ['is sung', 'is being sung', 'was sung', 'has been sung'], ans: 1, difficulty: 2 },
+            { q: 'They are building a house. -> A house ___ by them.', opts: ['is built', 'was built', 'is being built', 'are being built'], ans: 2, difficulty: 2 },
+            { q: 'He was reading a novel. -> A novel ___ by him.', opts: ['was being read', 'is being read', 'was read', 'were being read'], ans: 0, difficulty: 2 },
+            { q: 'I will finish the homework. -> The homework ___ by me.', opts: ['will finish', 'will be finished', 'is finished', 'would be finished'], ans: 1, difficulty: 2 },
+            { q: 'The teacher will punish the lazy students. -> The lazy students ___ by the teacher.', opts: ['will be punished', 'will punish', 'are punished', 'would punish'], ans: 0, difficulty: 2 },
+            { q: 'We were watching a movie. -> A movie ___ by us.', opts: ['was being watched', 'is being watched', 'were being watched', 'was watched'], ans: 0, difficulty: 2 },
+            { q: 'My father will buy a car. -> A car ___ by my father.', opts: ['will bought', 'will be bought', 'would be buy', 'is bought'], ans: 1, difficulty: 2 },
+
+            // Level 3: Perfect Tenses & Modals (Hard)
+            { q: 'I have finished the job. -> The job ___ by me.', opts: ['has been finished', 'have been finished', 'was finished', 'is finished'], ans: 0, difficulty: 3 },
+            { q: 'They have visited Bali. -> Bali ___ by them.', opts: ['have been visited', 'has been visited', 'was visited', 'had visited'], ans: 1, difficulty: 3 },
+            { q: 'Someone had stolen my bike. -> My bike ___ by someone.', opts: ['has been stolen', 'had been stolen', 'was stolen', 'is stolen'], ans: 1, difficulty: 3 },
+            { q: 'You must obey the rules. -> The rules ___ by you.', opts: ['must obey', 'must be obeyed', 'are obeyed', 'must obeyed'], ans: 1, difficulty: 3 },
+            { q: 'She can solve the problem. -> The problem ___ by her.', opts: ['can solve', 'could solve', 'can be solved', 'could be solved'], ans: 2, difficulty: 3 },
+            { q: 'The government should build more hospitals. -> More hospitals ___ by the government.', opts: ['should built', 'should be built', 'should be build', 'are built'], ans: 1, difficulty: 3 }
+        ];
+
+        let gameState = {
+            mode: 'single', // 'single' atau 'duel'
+            difficulty: 'medium', // 'easy', 'medium', 'hard'
+            p1Name: 'Player 1',
+            p2Name: 'Bot',
+            level: 1,
+            isPlaying: false,
+            p1Progress: 2, // Percentage 2% to 90%
+            p2Progress: 2,
+            p1Lives: 3,
+            p2Lives: 3,
+            currentQuestion: null,
+            botInterval: null,
+            questions: []
+        };
+
+        const config = {
+            maxLives: 3,
+            winProgress: 90,
+            progressStep: 15, // P1 moves 15% per correct answer
+            botSpeeds: {
+                easy: 0.5,
+                medium: 1.0,
+                hard: 1.8
+            }
+        };
+
+        // Audio Effects (Using simple Web Audio API to avoid external URLs)
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playTone(freq, type, duration, vol = 0.1) {
+            if(audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = type;
+            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+            
+            // Envelope
+            gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+            
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + duration);
+        }
+
+        function playCorrect() { playTone(600, 'sine', 0.1); setTimeout(()=>playTone(800, 'sine', 0.2), 100); }
+        function playWrong() { playTone(300, 'sawtooth', 0.3); }
+        
+        // Enhanced Win/Lose Fanfares
+        function playWin() { 
+            playTone(523.25, 'square', 0.1, 0.2); // C5
+            setTimeout(()=>playTone(659.25, 'square', 0.1, 0.2), 150); // E5
+            setTimeout(()=>playTone(783.99, 'square', 0.1, 0.2), 300); // G5
+            setTimeout(()=>playTone(1046.50, 'square', 0.4, 0.2), 450); // C6
+        }
+        function playLose() { 
+            playTone(300, 'sawtooth', 0.3, 0.2); 
+            setTimeout(()=>playTone(250, 'sawtooth', 0.3, 0.2), 300); 
+            setTimeout(()=>playTone(200, 'sawtooth', 0.6, 0.2), 600); 
+        }
+
+        // Background Music (BGM) System
+        let bgmTimer;
+        let bgmIndex = 0;
+        const bgmSequence = [
+            130.81, 0, 196.00, 0, 130.81, 0, 196.00, 0, // C3 G3 C3 G3
+            146.83, 0, 220.00, 0, 146.83, 0, 220.00, 0  // D3 A3 D3 A3
+        ];
+        
+        function startBGM() {
+            if(audioCtx.state === 'suspended') audioCtx.resume();
+            stopBGM();
+            bgmIndex = 0;
+            bgmTimer = setInterval(() => {
+                let freq = bgmSequence[bgmIndex];
+                if(freq > 0) playTone(freq, 'triangle', 0.15, 0.03); // Low volume BGM
+                bgmIndex = (bgmIndex + 1) % bgmSequence.length;
+            }, 250);
+        }
+
+        function stopBGM() {
+            clearInterval(bgmTimer);
+        }
+
+        // Confetti Visual Effect
+        function showConfetti() {
+            const colors = ['#facc15', '#3b82f6', '#ef4444', '#22c55e', '#a855f7'];
+            for(let i = 0; i < 70; i++) {
+                let conf = document.createElement('div');
+                conf.className = 'confetti';
+                conf.style.left = Math.random() * 100 + 'vw';
+                conf.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                conf.style.animationDuration = (Math.random() * 2 + 2) + 's';
+                conf.style.animationDelay = (Math.random() * 2) + 's';
+                document.body.appendChild(conf);
+            }
+        }
+
+        function hideConfetti() {
+            document.querySelectorAll('.confetti').forEach(e => e.remove());
+        }
+
+        function toggleModal(id) {
+            const modal = document.getElementById(id);
+            if(modal.classList.contains('hidden')) {
+                modal.classList.remove('hidden');
+            } else {
+                modal.classList.add('hidden');
+            }
+        }
+
+        function showMenu(menuId) {
+            document.getElementById('main-menu').classList.add('hidden');
+            document.getElementById(menuId).classList.remove('hidden');
+        }
+
+        function backToMainMenu(menuId) {
+            document.getElementById(menuId).classList.add('hidden');
+            document.getElementById('main-menu').classList.remove('hidden');
+        }
+
+        function startSingle(difficulty) {
+            let name = document.getElementById('sp-name').value.trim();
+            gameState.p1Name = name !== '' ? name : 'Player';
+            gameState.p2Name = 'Bot';
+            document.getElementById('single-setup-menu').classList.add('hidden');
+            startGame('single', difficulty);
+        }
+
+        function startDuel() {
+            let name1 = document.getElementById('dp-name1').value.trim();
+            let name2 = document.getElementById('dp-name2').value.trim();
+            gameState.p1Name = name1 !== '' ? name1 : 'Player 1';
+            gameState.p2Name = name2 !== '' ? name2 : 'Player 2';
+            document.getElementById('duel-setup-menu').classList.add('hidden');
+            startGame('duel', 'medium');
+        }
+
+        function showMessage(title, desc, color, buttonsHtml) {
+            const modal = document.getElementById('message-modal');
+            const box = document.getElementById('message-box');
+            document.getElementById('msg-title').innerText = title;
+            document.getElementById('msg-title').className = `text-3xl font-bold mb-4 title-font text-${color}-400`;
+            box.className = `bg-slate-800 border-4 border-${color}-500 rounded-2xl p-8 max-w-md w-full text-center shadow-2xl`;
+            document.getElementById('msg-desc').innerHTML = desc;
+            document.getElementById('msg-actions').innerHTML = buttonsHtml;
+            modal.classList.remove('hidden');
+            
+            // Animation
+            box.style.transform = 'scale(0.8)';
+            setTimeout(() => { box.style.transform = 'scale(1)'; box.style.transition = 'transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275)'; }, 10);
+        }
+
+        function closeMessage() {
+            hideConfetti();
+            document.getElementById('message-modal').classList.add('hidden');
+        }
+
+        function startGame(mode, difficulty) {
+            closeMessage(); // Menutup modal saat memulai ulang
+            
+            gameState.mode = mode;
+            gameState.difficulty = difficulty;
+            gameState.level = 1;
+            gameState.p1Lives = config.maxLives;
+            gameState.p2Lives = mode === 'duel' ? config.maxLives : 999; // Bot doesn't have lives
+            
+            document.getElementById('main-menu').classList.add('hidden');
+            document.getElementById('game-ui').classList.remove('hidden');
+
+            setupLevel();
+        }
+
+        function setupLevel() {
+            gameState.p1Progress = 2;
+            gameState.p2Progress = 2;
+            gameState.isPlaying = true;
+            
+            // Filter questions based on level
+            let qDiff = 1;
+            if(gameState.level > 2) qDiff = 2;
+            if(gameState.level > 4) qDiff = 3;
+            
+            // Clone and shuffle
+            gameState.questions = questionBank.filter(q => q.difficulty <= qDiff).sort(() => Math.random() - 0.5);
+            
+            updateHUD();
+            updateCars();
+            
+            // Setup Bot
+            clearInterval(gameState.botInterval);
+            if(gameState.mode === 'single') {
+                // Calculate bot speed multiplier based on level and difficulty
+                let speedMult = config.botSpeeds[gameState.difficulty];
+                speedMult += (gameState.level - 1) * 0.2; // Increase speed per level
+                
+                gameState.botInterval = setInterval(() => {
+                    if(!gameState.isPlaying) return;
+                    gameState.p2Progress += speedMult;
+                    updateCars();
+                    if(gameState.p2Progress >= config.winProgress) {
+                        endGame(false, 'Bot');
+                    }
+                }, 500);
+            }
+
+            // Setup UI Mode
+            const singleControls = document.getElementById('single-controls');
+            const duelControls = document.getElementById('duel-controls');
+            if(gameState.mode === 'single') {
+                singleControls.classList.remove('hidden');
+                duelControls.classList.add('hidden');
+            } else {
+                singleControls.classList.add('hidden');
+                duelControls.classList.remove('hidden');
+                document.getElementById('duel-p1-label').innerText = gameState.p1Name + ' (Kiri)';
+                document.getElementById('duel-p2-label').innerText = gameState.p2Name + ' (Kanan)';
+                document.getElementById('p2-lives').style.display = 'inline'; // Show P2 lives
+            }
+
+            startBGM();
+            loadNextQuestion();
+        }
+
+        function updateHUD() {
+            document.getElementById('level-display').innerText = `LEVEL ${gameState.level}`;
+            let modeText = gameState.mode === 'single' ? `Single Player - ${gameState.difficulty.toUpperCase()}` : 'Duel Mode';
+            document.getElementById('mode-display').innerText = modeText;
+            
+            document.getElementById('p1-name').innerText = gameState.p1Name;
+            document.getElementById('p2-name').innerText = gameState.p2Name;
+            
+            document.getElementById('p1-lives').innerText = '❤️'.repeat(Math.max(0, gameState.p1Lives));
+            
+            if(gameState.mode === 'duel') {
+                document.getElementById('p2-lives').innerText = '❤️'.repeat(Math.max(0, gameState.p2Lives));
+                document.getElementById('p2-lives').style.display = 'inline';
+            } else {
+                document.getElementById('p2-lives').style.display = 'none';
+            }
+        }
+
+        function updateCars() {
+            document.getElementById('car1').style.left = `${Math.min(gameState.p1Progress, 90)}%`;
+            document.getElementById('car2').style.left = `${Math.min(gameState.p2Progress, 90)}%`;
+        }
+
+        function loadNextQuestion() {
+            if(gameState.questions.length === 0) {
+                // Refill if empty
+                gameState.questions = questionBank.sort(() => Math.random() - 0.5);
+            }
+            gameState.currentQuestion = gameState.questions.pop();
+            
+            const qObj = gameState.currentQuestion;
+            document.getElementById('question-text').innerText = qObj.q;
+
+            // Generate Buttons
+            if(gameState.mode === 'single') {
+                const container = document.getElementById('single-controls');
+                container.innerHTML = '';
+                const colors = ['bg-blue-600 hover:bg-blue-500', 'bg-green-600 hover:bg-green-500', 'bg-yellow-600 hover:bg-yellow-500', 'bg-purple-600 hover:bg-purple-500'];
+                
+                qObj.opts.forEach((opt, idx) => {
+                    const btn = document.createElement('button');
+                    btn.className = `w-full btn-game ${colors[idx%4]} text-white font-bold py-3 md:py-4 px-4 rounded-xl text-sm md:text-lg border-b-4 border-opacity-50 border-black`;
+                    btn.innerText = opt;
+                    btn.onclick = () => handleAnswer(1, idx);
+                    container.appendChild(btn);
+                });
+            } else {
+                // Duel Controls
+                const p1Container = document.getElementById('duel-p1-options');
+                const p2Container = document.getElementById('duel-p2-options');
+                p1Container.innerHTML = '';
+                p2Container.innerHTML = '';
+
+                qObj.opts.forEach((opt, idx) => {
+                    // P1 Buttons (Blue theme)
+                    const btn1 = document.createElement('button');
+                    btn1.className = `w-full h-full btn-game bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-lg text-xs md:text-sm px-1 border-b-4 border-blue-800 flex items-center justify-center`;
+                    btn1.innerText = opt;
+                    btn1.onclick = () => handleAnswer(1, idx);
+                    p1Container.appendChild(btn1);
+
+                    // P2 Buttons (Red theme)
+                    const btn2 = document.createElement('button');
+                    btn2.className = `w-full h-full btn-game bg-red-600 hover:bg-red-500 text-white font-bold rounded-lg text-xs md:text-sm px-1 border-b-4 border-red-800 flex items-center justify-center`;
+                    btn2.innerText = opt;
+                    btn2.onclick = () => handleAnswer(2, idx);
+                    p2Container.appendChild(btn2);
+                });
+            }
+        }
+
+        function showFeedbackOverlay(isCorrect) {
+            const overlay = document.getElementById('feedback-overlay');
+            overlay.innerText = isCorrect ? 'BENAR!' : 'SALAH!';
+            overlay.className = `absolute inset-0 flex items-center justify-center bg-black bg-opacity-80 rounded-xl z-10 text-4xl font-bold title-font ${isCorrect ? 'text-green-400' : 'text-red-500'}`;
+            overlay.classList.remove('hidden');
+            setTimeout(() => {
+                overlay.classList.add('hidden');
+            }, 800);
+        }
+
+        function animateCar(player, isCorrect) {
+            const car = document.getElementById(player === 1 ? 'car1' : 'car2');
+            if(isCorrect) {
+                car.classList.add('moving');
+                setTimeout(() => car.classList.remove('moving'), 300);
+            } else {
+                car.classList.add('wrong');
+                setTimeout(() => car.classList.remove('wrong'), 500);
+            }
+        }
+
+        function handleAnswer(player, selectedIdx) {
+            if(!gameState.isPlaying) return;
+            
+            const isCorrect = selectedIdx === gameState.currentQuestion.ans;
+            
+            if(isCorrect) {
+                playCorrect();
+                showFeedbackOverlay(true);
+                animateCar(player, true);
+                
+                if(player === 1) gameState.p1Progress += config.progressStep;
+                else gameState.p2Progress += config.progressStep;
+                
+                updateCars();
+                checkWin();
+                
+                if(gameState.isPlaying) {
+                    gameState.isPlaying = false; // pause accepting inputs
+                    setTimeout(() => {
+                        gameState.isPlaying = true;
+                        loadNextQuestion();
+                    }, 800);
+                }
+
+            } else {
+                playWrong();
+                showFeedbackOverlay(false);
+                animateCar(player, false);
+                
+                if(player === 1) {
+                    gameState.p1Lives--;
+                    // Optional penalty: push back
+                    // gameState.p1Progress = Math.max(2, gameState.p1Progress - 5);
+                } else {
+                    gameState.p2Lives--;
+                }
+                
+                updateHUD();
+                
+                if(gameState.p1Lives <= 0) {
+                    endGame(false, gameState.mode === 'duel' ? gameState.p2Name : 'Bot');
+                    return;
+                }
+                if(gameState.mode === 'duel' && gameState.p2Lives <= 0) {
+                    endGame(true, gameState.p1Name);
+                    return;
+                }
+
+                // If wrong in duel, disable their buttons briefly (simulated by changing question after delay)
+                gameState.isPlaying = false;
+                setTimeout(() => {
+                    gameState.isPlaying = true;
+                    loadNextQuestion();
+                }, 800);
+            }
+        }
+
+        function checkWin() {
+            if(gameState.p1Progress >= config.winProgress) {
+                endGame(true, gameState.p1Name);
+            } else if (gameState.p2Progress >= config.winProgress) {
+                endGame(false, gameState.mode === 'duel' ? gameState.p2Name : 'Bot');
+            }
+        }
+
+        function endGame(isP1Win, winnerName) {
+            gameState.isPlaying = false;
+            clearInterval(gameState.botInterval);
+            stopBGM();
+            
+            if(isP1Win) {
+                playWin();
+                showConfetti();
+                if(gameState.mode === 'single') {
+                    // Level Up Modal
+                    let btnHTML = `<button onclick="nextLevel()" class="btn-game bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-6 rounded-lg">Level Selanjutnya</button>`;
+                    showMessage('MENANG!', `Hebat! Kamu berhasil mengalahkan Bot di Level ${gameState.level}.<br><span class="text-sm text-yellow-300">+1 Nyawa (Maks ${config.maxLives})</span>`, 'green', btnHTML);
+                } else {
+                    // Duel Win
+                    let btnHTML = `<button onclick="backToMenu()" class="btn-game bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-6 rounded-lg">Menu Utama</button>`;
+                    showMessage('SELESAI!', `<span class="text-blue-400 font-bold">${winnerName}</span> Memenangkan Balapan!`, 'yellow', btnHTML);
+                }
+            } else {
+                playLose();
+                // Lose Modal
+                let btnHTML = `<button onclick="backToMenu()" class="btn-game bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-6 rounded-lg">Menu Utama</button>
+                               <button onclick="startGame('${gameState.mode}', '${gameState.difficulty}')" class="btn-game bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-6 rounded-lg">Coba Lagi</button>`;
+                
+                let reason = gameState.p1Lives <= 0 ? 'Kehabisan Nyawa!' : `${winnerName} mencapai garis finish lebih dulu.`;
+                showMessage('KALAH!', `${reason}<br>Jangan menyerah, ayo belajar Passive Voice lagi!`, 'red', btnHTML);
+            }
+        }
+
+        function nextLevel() {
+            closeMessage();
+            gameState.level++;
+            // Heal 1 life up to max
+            if(gameState.p1Lives < config.maxLives) gameState.p1Lives++;
+            setupLevel();
+        }
+
+        function backToMenu() {
+            closeMessage();
+            stopBGM();
+            clearInterval(gameState.botInterval);
+            document.getElementById('game-ui').classList.add('hidden');
+            document.getElementById('main-menu').classList.remove('hidden');
+        }
+
+        // Initialize display
+        document.getElementById('game-ui').classList.add('hidden');
+        
+    </script>
+</body>
+</html>
